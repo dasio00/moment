@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#ffffff">
+<link rel="manifest" href="manifest.json">
+<title>Moment</title>
+
+<style>
+body {
+    margin: 0;
+    background: #f5f5f7;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    display: flex;
+    justify-content: center;
+    color: #111;
+}
+
+.container {
+    width: 100%;
+    max-width: 500px;
+    padding: 20px;
+}
+
+h1 {
+    font-weight: 600;
+    font-size: 22px;
+    margin-bottom: 20px;
+}
+
+.card {
+    background: white;
+    border-radius: 20px;
+    padding: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    resize: none;
+}
+
+img {
+    width: 100%;
+    border-radius: 15px;
+    margin-top: 10px;
+}
+
+.controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+button {
+    background: #111;
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 999px;
+}
+
+input[type="file"] {
+    display: none;
+}
+label {
+    font-size: 14px;
+    color: #555;
+    cursor: pointer;
+}
+.time {
+    font-size: 12px;
+    color: #888;
+    margin-top: 8px;
+}
+.delete {
+    font-size: 12px;
+    color: #ff3b30;
+    cursor: pointer;
+    text-align: right;
+    margin-top: 5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>Moment</h1>
+
+    <div class="card">
+        <textarea id="text" rows="3" placeholder="Write something..."></textarea>
+        <img id="preview" style="display:none;">
+        <div class="controls">
+            <label>
+                📷 Photo
+                <input type="file" id="imageInput" accept="image/*">
+            </label>
+            <button onclick="addPost()">Post</button>
+        </div>
+    </div>
+
+    <div id="feed"></div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js');
+}
+
+let posts = JSON.parse(localStorage.getItem("posts")) || [];
+let imageData = null;
+
+const preview = document.getElementById("preview");
+
+document.getElementById("imageInput").addEventListener("change", function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        imageData = e.target.result;
+        preview.src = imageData;
+        preview.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+});
+
+function save() {
+    localStorage.setItem("posts", JSON.stringify(posts));
+}
+
+function addPost() {
+    const text = document.getElementById("text").value.trim();
+    if (!text && !imageData) return;
+
+    posts.unshift({
+        content: text,
+        image: imageData,
+        time: new Date().toLocaleString()
+    });
+
+    save();
+    render();
+
+    document.getElementById("text").value = "";
+    preview.style.display = "none";
+    imageData = null;
+}
+
+function deletePost(i) {
+    posts.splice(i,1);
+    save();
+    render();
+}
+
+function render() {
+    const feed = document.getElementById("feed");
+    feed.innerHTML = "";
+    posts.forEach((p,i)=>{
+        feed.innerHTML += `
+            <div class="card">
+                <div>${p.content || ""}</div>
+                ${p.image ? `<img src="${p.image}">` : ""}
+                <div class="time">${p.time}</div>
+                <div class="delete" onclick="deletePost(${i})">Delete</div>
+            </div>
+        `;
+    });
+}
+render();
+</script>
+
+</body>
+</html>
